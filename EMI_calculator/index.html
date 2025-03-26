@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #f4f4f4;
+        }
+
+        .calculator-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 900px;
+        }
+
+        .result-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        canvas {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+
+        .result-details {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            font-size: 16px;
+            font-weight: 600;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .row {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-container container">
+        <div class="row g-4">
+            <div class="col-lg-6 col-md-12">
+                <div class="form-group">
+                    <label for="loan-amount" class="form-label">Loan Amount (₹):</label>
+                    <input type="number" id="loan-amount" class="form-control" value="500000">
+                </div>
+                <div class="form-group">
+                    <label for="interest-rate" class="form-label">Annual Interest Rate (%):</label>
+                    <input type="range" id="interest-rate" class="form-range" min="1" max="20" value="10">
+                    <div class="slider-label">
+                        <span>1%</span>
+                        <span id="rate-label">10%</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="loan-tenure" class="form-label">Loan Tenure (Years):</label>
+                    <input type="range" id="loan-tenure" class="form-range" min="1" max="30" value="15">
+                    <div class="slider-label">
+                        <span>1 Yr</span>
+                        <span id="tenure-label">15 Yrs</span>
+                    </div>
+                </div>
+                <button class="btn btn-primary w-100 mt-3" onclick="calculateEMI()">Calculate</button>
+                <div class="result-container mt-4">
+                    <div class="result-value" id="result">Monthly EMI: ₹ 0.00</div>
+                    <div class="result-details mt-3">
+                        <div id="total-payment">Total Payment: ₹ 0.00</div>
+                        <div id="total-interest">Total Interest: ₹ 0.00</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-12 d-flex justify-content-center align-items-center">
+                <canvas id="emiChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function calculateEMI() {
+            const loanAmount = parseFloat(document.getElementById('loan-amount').value);
+            const annualInterestRate = parseFloat(document.getElementById('interest-rate').value) / 100;
+            const monthlyInterestRate = annualInterestRate / 12;
+            const loanTenureMonths = parseFloat(document.getElementById('loan-tenure').value) * 12;
+
+            const emi = (loanAmount * monthlyInterestRate * Math.pow(1 + monthlyInterestRate, loanTenureMonths)) /
+                        (Math.pow(1 + monthlyInterestRate, loanTenureMonths) - 1);
+            const totalPayment = emi * loanTenureMonths;
+            const totalInterest = totalPayment - loanAmount;
+
+            document.getElementById('result').innerText = `Monthly EMI: ₹${emi.toFixed(2)}`;
+            document.getElementById('total-payment').innerText = `Total Payment: ₹${totalPayment.toFixed(2)}`;
+            document.getElementById('total-interest').innerText = `Total Interest: ₹${totalInterest.toFixed(2)}`;
+
+            updateChart(loanAmount, totalInterest);
+        }
+
+        function updateChart(loanAmount, totalInterest) {
+            const ctx = document.getElementById('emiChart').getContext('2d');
+            if (window.emiChartInstance) {
+                window.emiChartInstance.destroy();
+            }
+            window.emiChartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Loan Amount', 'Total Interest'],
+                    datasets: [{
+                        data: [loanAmount, totalInterest],
+                        backgroundColor: ['#4caf50', '#f44336'],
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        },
+                        datalabels: {
+                            color: '#fff',
+                            font: {
+                                weight: 'bold'
+                            },
+                            formatter: (value) => `₹${value.toFixed(2)}`
+                        }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                },
+                plugins: [ChartDataLabels]
+            });
+        }
+
+        document.getElementById('interest-rate').addEventListener('input', function() {
+            document.getElementById('rate-label').innerText = `${this.value}%`;
+        });
+
+        document.getElementById('loan-tenure').addEventListener('input', function() {
+            document.getElementById('tenure-label').innerText = `${this.value} Yrs`;
+        });
+
+        // Initial calculation
+        calculateEMI();
+    </script>
+</body>
+</html>
